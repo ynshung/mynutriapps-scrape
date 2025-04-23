@@ -27,7 +27,7 @@ const URLS = PATHS.map((path) => `${BASE_URL}&path=${path}`);
         return {
           name: anchorElement?.textContent?.trim() || "",
           link: (anchorElement as HTMLAnchorElement)?.href || "",
-          image: imgElement?.getAttribute("src") || "",
+          image: imgElement?.getAttribute("data-src") || imgElement?.getAttribute("src") || "",
           price: priceElement?.textContent?.trim() || "",
         };
       });

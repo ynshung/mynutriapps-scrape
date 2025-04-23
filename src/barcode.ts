@@ -29,19 +29,19 @@ interface Item {
   );
   const originalFilePath = path.resolve(
     __dirname,
-    `../output/${inputName}.json`
+    `../output/product/${inputName}.json`
   );
 
   let typedData: Item[];
+  let barcodeMap: Record<string, string | null> = {};
 
   if (fs.existsSync(barcodeFilePath)) {
-    console.log(`Reading data from ${barcodeFilePath}`);
-    typedData = JSON.parse(fs.readFileSync(barcodeFilePath, "utf-8"));
-  } else {
-    console.log(`${barcodeFilePath} not found. Copying data from ${originalFilePath}`);
-    typedData = JSON.parse(fs.readFileSync(originalFilePath, "utf-8"));
-    fs.writeFileSync(barcodeFilePath, JSON.stringify(typedData, null, 2), "utf-8");
+    console.log(`Reading barcode map from ${barcodeFilePath}`);
+    barcodeMap = JSON.parse(fs.readFileSync(barcodeFilePath, "utf-8"));
   }
+
+  console.log(`Reading original data from ${originalFilePath}`);
+  typedData = JSON.parse(fs.readFileSync(originalFilePath, "utf-8"));
 
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
@@ -50,9 +50,9 @@ interface Item {
   await page.setJavaScriptEnabled(!disableJS);
 
   for (const [index, item] of typedData.entries()) {
-    const { name, link, barcode } = item;
+    const { name, link } = item;
 
-    if (barcode && barcode.trim()) {
+    if (barcodeMap[link]) {
       continue;
     }
 
@@ -65,17 +65,19 @@ interface Item {
       );
 
       if (fetchedBarcode) {
-        item.barcode = fetchedBarcode;
+        barcodeMap[link] = fetchedBarcode;
       } else {
         console.log(`No barcode found for ${name}`);
+        barcodeMap[link] = null;
       }
     } catch (error) {
       console.error(`Failed to fetch barcode for ${name}:`, error.message);
+      barcodeMap[link] = null;
     }
 
     // Save progress every 10 elements
     if ((index + 1) % 10 === 0 || index === typedData.length - 1) {
-      fs.writeFile(barcodeFilePath, JSON.stringify(typedData, null, 2), "utf-8", (err) => {
+      fs.writeFile(barcodeFilePath, JSON.stringify(barcodeMap, null, 2), "utf-8", (err) => {
         if (err) {
           console.error(`Error saving data to ${barcodeFilePath}:`, err.message);
         }
@@ -83,6 +85,6 @@ interface Item {
     }
   }
 
-  console.log(`Final data saved to ${barcodeFilePath}`);
+  console.log(`Final barcode map saved to ${barcodeFilePath}`);
   await browser.close();
 })();

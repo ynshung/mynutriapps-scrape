@@ -31,7 +31,7 @@ const URLS: string[] = [
         return {
           name: nameElement?.textContent?.trim() || "",
           link: (nameElement as HTMLAnchorElement)?.href || "",
-          image: imgElement?.getAttribute("src") || "",
+          image: imgElement?.getAttribute("data-src") || imgElement?.getAttribute("src") || "",
           price: priceElement?.textContent?.trim() || "",
         };
       });
